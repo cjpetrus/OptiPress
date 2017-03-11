@@ -1,0 +1,86 @@
+
+server {
+    listen         80;
+    merge_slashes on;
+#    ssl    on;
+#    ssl_certificate    /etc/ssl/cert1.pem;
+#    ssl_certificate_key    /etc/ssl/rivkey1.pem;
+
+    root /var/www/default/web;
+    index index.html index.htm index.nginx-debian.html index.php;
+
+
+location / {
+    index index.php index.html index.htm;
+    try_files $uri $uri/ /index.php?$args;
+}
+
+    location ~ \.php$ {
+
+        try_files $uri $uri/ /index.php?$args=404;
+        fastcgi_index index.php;
+        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+        include fastcgi_params;
+        fastcgi_pass unix:/var/run/php5-fpm.sock;
+    }
+
+    # deny access to .htaccess files, if Apache's document root
+    # concurs with nginx's one
+    #
+
+    location ~ /\.ht {
+        deny all;
+    }
+     #Directives to send expires headers and turn off 404 error logging.
+   location ~* ^.+\.(ogg|ogv|svg|svgz|eot|otf|woff|mp4|ttf|rss|atom|jpg|jpeg|gif|png|ico|zip|tgz|gz|rar|bz2|doc|xls|exe|ppt|tar|mid|midi|wav|bmp|rtf)$ {
+        add_header Pragma public;
+        add_header Cache-Control "public";
+        expires 14d;
+    }
+
+    # Deny all attempts to access hidden files such as .htaccess, .htpasswd, .DS_Store (Mac).
+    # Keep logging the requests to parse later (or to pass to firewall utilities such as fail2ban)
+    location ~ /\. {
+        deny all;
+    }
+
+    # Deny access to any files with a .php extension in the uploads directory
+    # Works in sub-directory installs and also in multisite network
+    # Keep logging the requests to parse later (or to pass to firewall utilities such as fail2ban)
+    location ~* /(?:uploads|files)/.*\.php$ {
+        deny all;
+    }
+
+    # define what we shouldn't normally cache
+    set $no_cache "";
+
+    if ($request_method = POST)
+    {
+        set $no_cache 1;
+    }
+
+    if ($request_uri ~* "/(wp-admin/|wp-login.php)")
+    {
+        set $no_cache 1;
+    }
+
+    if ($http_cookie ~* "wordpress_logged_in_")
+    {
+        set $no_cache 1;
+    }
+
+    location = /favicon.ico {
+        log_not_found off;
+        access_log off;
+    }
+
+    location = /robots.txt {
+        allow all;
+        log_not_found off;
+        access_log off;
+    }
+
+    # avoid a bit of information disclosure
+    server_tokens off;
+    server_name_in_redirect off;
+}
